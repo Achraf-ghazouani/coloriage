@@ -211,13 +211,24 @@ tbody tr:hover {
 }
 
 .color-badge {
-    display: inline-block;
-    padding: 5px 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 15px;
     border-radius: 20px;
-    color: white;
+    background: #f7fafc;
+    border: 2px solid #e2e8f0;
     font-weight: 600;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    color: #2d3748;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.1);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .time-badge {

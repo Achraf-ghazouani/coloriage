@@ -108,7 +108,8 @@ function updateTable(data) {
             <td>${formatDate(item.timestamp)}</td>
             <td><strong>${escapeHtml(item.name)}</strong></td>
             <td>
-                <span class="color-badge" style="background-color: ${escapeHtml(item.mostUsedColor)}">
+                <span class="color-badge">
+                    <span class="color-swatch" style="background-color: ${escapeHtml(item.mostUsedColor)}"></span>
                     ${escapeHtml(item.mostUsedColor)}
                 </span>
             </td>
