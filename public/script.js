@@ -90,7 +90,8 @@ function updateStats(data) {
         document.getElementById('topColor').style.color = '#667eea';
     }
 }
-initChart() {
+
+function initChart() {
     const ctx = document.getElementById('colorChart');
     if (!ctx) return;
     
@@ -123,22 +124,22 @@ initChart() {
                                 return data.labels.map((label, i) => {
                                     const value = data.datasets[0].data[i];
                                     return {
-                  Êtes-vous sûr de vouloir effacer toutes les données?')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_URL, {
-            method: 'DELETE'
-        });
-        
-        if (response.ok) {
-            loadData();
-            showSuccess('Toutes les données ont été effacées avec succès!');
-        }
-    } catch (error) {
-        console.error('Erreur lors de l\'effacement des données:', error);
-        showError('Échec de l\'effacement des données = context.parsed || 0;
+                                        text: `${label} (${value} utilisations)`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const percentage = ((value / total) * 100).toFixed(1);
                             return `${label}: ${value} (${percentage}%)`;
@@ -153,7 +154,7 @@ initChart() {
 function updateChart(data) {
     const noChartData = document.getElementById('noChartData');
     const chartCanvas = document.getElementById('colorChart');
-    fr-FR
+    
     if (data.length === 0) {
         if (chartCanvas) chartCanvas.style.display = 'none';
         if (noChartData) noChartData.style.display = 'block';
@@ -189,8 +190,7 @@ function updateTable(data) {
     if (data.length === 0) {
         tbody.innerHTML = `
             <tr class="no-data">
-                <td colspan="4">Aucune donnée pour le moment. En attente des données de Unity
-                <td colspan="4">No data yet. Waiting for Unity to send data...</td>
+                <td colspan="4">Aucune donnée pour le moment. En attente des données de Unity...</td>
             </tr>
         `;
         return;
@@ -216,7 +216,7 @@ function updateTable(data) {
 }
 
 async function clearData() {
-    if (!confirm('Are you sure you want to clear all data?')) {
+    if (!confirm('Êtes-vous sûr de vouloir effacer toutes les données?')) {
         return;
     }
     
@@ -227,11 +227,11 @@ async function clearData() {
         
         if (response.ok) {
             loadData();
-            showSuccess('All data cleared successfully!');
+            showSuccess('Toutes les données ont été effacées avec succès!');
         }
     } catch (error) {
-        console.error('Error clearing data:', error);
-        showError('Failed to clear data.');
+        console.error('Erreur lors de l\'effacement des données:', error);
+        showError('Échec de l\'effacement des données.');
     }
 }
 
@@ -246,7 +246,7 @@ function formatTime(seconds) {
 
 function formatDate(timestamp) {
     const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
+    return date.toLocaleString('fr-FR', {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -262,11 +262,9 @@ function escapeHtml(text) {
 }
 
 function showError(message) {
-    // Simple alert for now - you can make this fancier
     console.error(message);
 }
 
 function showSuccess(message) {
-    // Simple alert for now - you can make this fancier
     console.log(message);
 }
