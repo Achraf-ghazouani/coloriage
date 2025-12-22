@@ -216,19 +216,17 @@ tbody tr:hover {
     gap: 8px;
     padding: 8px 15px;
     border-radius: 20px;
-    background: #f7fafc;
-    border: 2px solid #e2e8f0;
     font-weight: 600;
-    color: #2d3748;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    border: 3px solid;
 }
 
-.color-swatch {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 2px solid rgba(0,0,0,0.1);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+.color-badge-text {
+    color: #2d3748;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.9em;
 }
 
 .time-badge {
