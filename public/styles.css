@@ -162,6 +162,25 @@ header h1 {
     font-weight: 500;
 }
 
+.chart-container {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    margin-bottom: 30px;
+}
+
+.chart-container h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.chart-wrapper {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
 .table-container {
     background: white;
     border-radius: 15px;

@@ -1,68 +1,79 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coloriage Dashboard</title>
+    <title>Tableau de Bord Coloriage</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎨 Coloriage Dashboard</h1>
-            <p class="subtitle">Real-time data from Unity Application</p>
+            <h1>🎨 Tableau de Bord Coloriage</h1>
+            <p class="subtitle">Données en temps réel de l'application Unity</p>
         </header>
 
         <div class="stats-container">
             <div class="stat-card">
                 <div class="stat-icon">👥</div>
                 <div class="stat-value" id="totalUsers">0</div>
-                <div class="stat-label">Total Users</div>
+                <div class="stat-label">Utilisateurs Totaux</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">⏱️</div>
                 <div class="stat-value" id="avgTime">0m</div>
-                <div class="stat-label">Avg. Design Time</div>
+                <div class="stat-label">Temps Moyen de Design</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">🎨</div>
                 <div class="stat-value" id="topColor">-</div>
-                <div class="stat-label">Most Popular Color</div>
+                <div class="stat-label">Couleur la Plus Populaire</div>
             </div>
         </div>
 
         <div class="controls">
-            <button id="refreshBtn" class="btn btn-primary">🔄 Refresh</button>
-            <button id="clearBtn" class="btn btn-danger">🗑️ Clear All Data</button>
+            <button id="refreshBtn" class="btn btn-primary">🔄 Actualiser</button>
+            <button id="clearBtn" class="btn btn-danger">🗑️ Effacer Toutes les Données</button>
             <label class="toggle-switch">
                 <input type="checkbox" id="autoRefresh" checked>
                 <span class="slider"></span>
-                <span class="toggle-label">Auto-refresh (5s)</span>
+                <span class="toggle-label">Auto-actualisation (5s)</span>
             </label>
         </div>
 
+        <div class="chart-container">
+            <h2>📊 Distribution des Couleurs Utilisées</h2>
+            <div class="chart-wrapper">
+                <canvas id="colorChart"></canvas>
+            </div>
+            <div id="noChartData" class="no-data" style="display: none; padding: 40px; text-align: center;">
+                Aucune donnée disponible pour afficher le graphique
+            </div>
+        </div>
+
         <div class="table-container">
-            <h2>Recent Activity</h2>
+            <h2>📋 Activité Récente</h2>
             <table id="dataTable">
                 <thead>
                     <tr>
-                        <th>Time</th>
-                        <th>Name</th>
-                        <th>Most Used Color</th>
-                        <th>Design Time</th>
+                        <th>Heure</th>
+                        <th>Nom</th>
+                        <th>Couleur la Plus Utilisée</th>
+                        <th>Temps de Design</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr class="no-data">
-                        <td colspan="4">No data yet. Waiting for Unity to send data...</td>
+                        <td colspan="4">Aucune donnée pour le moment. En attente des données de Unity...</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
         <footer style="text-align: center; margin-top: 40px; color: white; opacity: 0.8;">
-            <p>📡 API Endpoint: <span id="apiEndpoint" style="font-family: monospace; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 5px;"></span></p>
-            <p style="font-size: 0.9em; margin-top: 10px;">Send POST requests with: name, mostUsedColor, designTime</p>
+            <p>📡 Point d'API: <span id="apiEndpoint" style="font-family: monospace; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 5px;"></span></p>
+            <p style="font-size: 0.9em; margin-top: 10px;">Envoyer des requêtes POST avec: name, mostUsedColor, designTime</p>
         </footer>
     </div>
 

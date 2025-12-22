@@ -4,6 +4,7 @@ const API_URL = window.location.hostname === 'localhost'
     : '/api/data';
 
 let autoRefreshInterval = null;
+let colorChart = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         apiEndpointEl.textContent = window.location.origin + '/api/data';
     }
     
+    initChart();
     loadData();
     setupEventListeners();
     startAutoRefresh();
@@ -48,10 +50,11 @@ async function loadData() {
         const data = await response.json();
         
         updateStats(data);
+        updateChart(data);
         updateTable(data);
     } catch (error) {
-        console.error('Error loading data:', error);
-        showError('Failed to load data. Make sure the server is running.');
+        console.error('Erreur de chargement des données:', error);
+        showError('Échec du chargement des données. Assurez-vous que le serveur fonctionne.');
     }
 }
 
@@ -87,6 +90,98 @@ function updateStats(data) {
         document.getElementById('topColor').style.color = '#667eea';
     }
 }
+initChart() {
+    const ctx = document.getElementById('colorChart');
+    if (!ctx) return;
+    
+    colorChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [],
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: {
+                            size: 12,
+                            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif'
+                        },
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const value = data.datasets[0].data[i];
+                                    return {
+                  Êtes-vous sûr de vouloir effacer toutes les données?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(API_URL, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            loadData();
+            showSuccess('Toutes les données ont été effacées avec succès!');
+        }
+    } catch (error) {
+        console.error('Erreur lors de l\'effacement des données:', error);
+        showError('Échec de l\'effacement des données = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateChart(data) {
+    const noChartData = document.getElementById('noChartData');
+    const chartCanvas = document.getElementById('colorChart');
+    fr-FR
+    if (data.length === 0) {
+        if (chartCanvas) chartCanvas.style.display = 'none';
+        if (noChartData) noChartData.style.display = 'block';
+        return;
+    }
+    
+    if (chartCanvas) chartCanvas.style.display = 'block';
+    if (noChartData) noChartData.style.display = 'none';
+    
+    // Count color usage
+    const colorCounts = {};
+    data.forEach(item => {
+        colorCounts[item.mostUsedColor] = (colorCounts[item.mostUsedColor] || 0) + 1;
+    });
+    
+    // Sort by count
+    const sortedColors = Object.entries(colorCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10); // Top 10 colors
+    
+    // Update chart
+    if (colorChart) {
+        colorChart.data.labels = sortedColors.map(([color]) => color);
+        colorChart.data.datasets[0].data = sortedColors.map(([, count]) => count);
+        colorChart.data.datasets[0].backgroundColor = sortedColors.map(([color]) => color);
+        colorChart.update();
+    }
+}
 
 function updateTable(data) {
     const tbody = document.getElementById('tableBody');
@@ -94,6 +189,7 @@ function updateTable(data) {
     if (data.length === 0) {
         tbody.innerHTML = `
             <tr class="no-data">
+                <td colspan="4">Aucune donnée pour le moment. En attente des données de Unity
                 <td colspan="4">No data yet. Waiting for Unity to send data...</td>
             </tr>
         `;
