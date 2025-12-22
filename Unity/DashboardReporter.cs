@@ -13,6 +13,9 @@ public class DashboardReporter : MonoBehaviour
     [Tooltip("URL of the dashboard server")]
     public string dashboardURL = "http://localhost:3000/api/data";
     
+    [Tooltip("API Key for authentication")]
+    public string apiKey = "unity-secret-key-123";
+    
     [Header("Data to Send")]
     public string userName = "Player1";
     public string mostUsedColor = "#FF5733";
@@ -125,6 +128,7 @@ public class DashboardReporter : MonoBehaviour
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("X-API-Key", apiKey);
 
             // Send request
             yield return request.SendWebRequest();

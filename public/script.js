@@ -6,8 +6,34 @@ const API_URL = window.location.hostname === 'localhost'
 let autoRefreshInterval = null;
 let colorChart = null;
 
+// Get authentication token
+function getAuthToken() {
+    return localStorage.getItem('dashboardToken');
+}
+
+// Check if authenticated
+function checkAuthentication() {
+    const token = getAuthToken();
+    if (!token) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+// Logout function
+function logout() {
+    localStorage.removeItem('dashboardToken');
+    window.location.href = 'login.html';
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // Check authentication first
+    if (!checkAuthentication()) {
+        return;
+    }
+
     // Display API endpoint
     const apiEndpointEl = document.getElementById('apiEndpoint');
     if (apiEndpointEl) {
@@ -46,7 +72,17 @@ function stopAutoRefresh() {
 
 async function loadData() {
     try {
-        const response = await fetch(API_URL);
+        const response = await fetch(API_URL, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+
+        if (response.status === 401) {
+            logout();
+            return;
+        }
+        
         const data = await response.json();
         
         updateStats(data);
