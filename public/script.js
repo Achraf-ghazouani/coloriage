@@ -1,8 +1,18 @@
-const API_URL = 'http://localhost:3000/api/data';
+// Auto-detect API URL based on environment
+const API_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3000/api/data'
+    : '/api/data';
+
 let autoRefreshInterval = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // Display API endpoint
+    const apiEndpointEl = document.getElementById('apiEndpoint');
+    if (apiEndpointEl) {
+        apiEndpointEl.textContent = window.location.origin + '/api/data';
+    }
+    
     loadData();
     setupEventListeners();
     startAutoRefresh();

@@ -220,13 +220,25 @@ coloriage/
 
 ## 🔒 Production Deployment
 
-For production use, consider:
+### Deploy to Vercel
 
-1. **Using a database** (MongoDB, PostgreSQL) instead of in-memory storage
+The project is ready for Vercel deployment! See [DEPLOY.md](DEPLOY.md) for detailed instructions.
+
+**Quick Deploy:**
+```bash
+npm install -g vercel
+vercel login
+vercel --prod
+```
+
+### For Production Use
+
+1. **Using a database** (MongoDB, PostgreSQL, Vercel KV) instead of in-memory storage
 2. **Adding authentication** to protect your endpoints
 3. **Using environment variables** for configuration
-4. **Deploying to a cloud service** (Heroku, AWS, Azure)
-5. **Adding HTTPS** for secure communication
+4. **Adding HTTPS** (automatic with Vercel)
+
+See [DEPLOY.md](DEPLOY.md) for database integration options.
 
 ## 📄 License
 
