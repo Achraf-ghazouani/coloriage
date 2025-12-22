@@ -179,7 +179,7 @@ function updateChart(data) {
     if (colorChart) {
         colorChart.data.labels = sortedColors.map(([color]) => color);
         colorChart.data.datasets[0].data = sortedColors.map(([, count]) => count);
-        colorChart.data.datasets[0].backgroundColor = sortedColors.map(([color]) => color);
+        colorChart.data.datasets[0].backgroundColor = sortedColors.map(([color]) => getColorHex(color));
         colorChart.update();
     }
 }
@@ -204,7 +204,7 @@ function updateTable(data) {
             <td>${formatDate(item.timestamp)}</td>
             <td><strong>${escapeHtml(item.name)}</strong></td>
             <td>
-                <span class="color-badge" style="background-color: ${escapeHtml(item.mostUsedColor)}; border-color: ${escapeHtml(item.mostUsedColor)};">
+                <span class="color-badge" style="background-color: ${getColorHex(item.mostUsedColor)}; border-color: ${getColorHex(item.mostUsedColor)};">
                     <span class="color-badge-text">${escapeHtml(item.mostUsedColor)}</span>
                 </span>
             </td>
@@ -253,6 +253,84 @@ function formatDate(timestamp) {
         minute: '2-digit',
         second: '2-digit'
     });
+}
+
+function getColorHex(colorName) {
+    // Convert French color names to hex codes
+    const colorMap = {
+        // Rouge / Red shades
+        'rouge': '#FF0000',
+        'red': '#FF0000',
+        'rouge foncé': '#8B0000',
+        'rouge clair': '#FF6B6B',
+        
+        // Bleu / Blue shades
+        'bleu': '#0000FF',
+        'blue': '#0000FF',
+        'bleu foncé': '#00008B',
+        'bleu clair': '#87CEEB',
+        'cyan': '#00FFFF',
+        'turquoise': '#40E0D0',
+        
+        // Vert / Green shades
+        'vert': '#00FF00',
+        'green': '#00FF00',
+        'vert foncé': '#006400',
+        'vert clair': '#90EE90',
+        
+        // Jaune / Yellow shades
+        'jaune': '#FFFF00',
+        'yellow': '#FFFF00',
+        'or': '#FFD700',
+        'gold': '#FFD700',
+        
+        // Orange
+        'orange': '#FFA500',
+        'orange foncé': '#FF8C00',
+        
+        // Violet / Purple shades
+        'violet': '#EE82EE',
+        'purple': '#800080',
+        'mauve': '#E0B0FF',
+        'magenta': '#FF00FF',
+        
+        // Rose / Pink
+        'rose': '#FFC0CB',
+        'pink': '#FFC0CB',
+        'rose foncé': '#C71585',
+        
+        // Marron / Brown
+        'marron': '#8B4513',
+        'brown': '#8B4513',
+        'brun': '#A52A2A',
+        
+        // Gris / Gray
+        'gris': '#808080',
+        'gray': '#808080',
+        'grey': '#808080',
+        'gris foncé': '#404040',
+        'gris clair': '#D3D3D3',
+        
+        // Noir et Blanc / Black and White
+        'noir': '#000000',
+        'black': '#000000',
+        'blanc': '#FFFFFF',
+        'white': '#FFFFFF',
+        
+        // Autres / Others
+        'beige': '#F5F5DC',
+        'crème': '#FFFDD0',
+        'ivoire': '#FFFFF0'
+    };
+    
+    // Check if it's already a hex code
+    if (colorName && colorName.startsWith('#')) {
+        return colorName;
+    }
+    
+    // Convert to lowercase and check mapping
+    const normalizedName = colorName ? colorName.toLowerCase().trim() : '';
+    return colorMap[normalizedName] || colorName || '#808080';
 }
 
 function escapeHtml(text) {
