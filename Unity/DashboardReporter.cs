@@ -37,9 +37,17 @@ public class DashboardReporter : MonoBehaviour
 
     /// <summary>
     /// Call this method when a color is used (hex string)
+    /// IMPORTANT: Always use hex format like #FF0000, not color names
     /// </summary>
     public void TrackColorUsage(string hexColor)
     {
+        // Ensure it's a hex color
+        if (!hexColor.StartsWith("#"))
+        {
+            Debug.LogWarning($"Color should be in hex format (e.g., #FF0000), got: {hexColor}");
+            return;
+        }
+        
         if (!colorUsage.ContainsKey(hexColor))
         {
             colorUsage[hexColor] = 0;
@@ -160,10 +168,15 @@ public class DashboardReporter : MonoBehaviour
         // Example: Send data when pressing 'S' key (for testing)
         if (Input.GetKeyDown(KeyCode.S))
         {
-            // Simulate some color usage
-            TrackColorUsage("#FF5733");
-            TrackColorUsage("#FF5733");
-            TrackColorUsage("#33FF57");
+            // ✅ CORRECT: Use hex codes or Unity Color objects
+            TrackColorUsage(Color.red);        // Converts to #FF0000
+            TrackColorUsage(Color.blue);       // Converts to #0000FF
+            TrackColorUsage(Color.green);      // Converts to #00FF00
+            TrackColorUsage("#FF5733");        // Orange
+            TrackColorUsage("#33FF57");        // Green
+            
+            // ❌ INCORRECT: Don't use color names like "Rouge", "Bleu", etc.
+            // TrackColorUsage("Rouge");  // This won't work!
             
             SendDataToDashboard();
         }
