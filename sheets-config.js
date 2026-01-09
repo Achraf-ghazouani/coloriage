@@ -29,7 +29,7 @@ async function initializeSheets() {
 }
 
 // Get data from Google Sheet
-async function getSheetData(spreadsheetId, range = 'Sheet1!A2:E') {
+async function getSheetData(spreadsheetId, range = 'Feuille 1!A2:E') {
     try {
         const sheetsApi = await initializeSheets();
         if (!sheetsApi) return [];
@@ -72,7 +72,7 @@ async function appendSheetData(spreadsheetId, data) {
 
         await sheetsApi.spreadsheets.values.append({
             spreadsheetId,
-            range: 'Sheet1!A:E',
+            range: 'Feuille 1!A:E',
             valueInputOption: 'RAW',
             resource: { values }
         });
@@ -92,7 +92,7 @@ async function clearSheetData(spreadsheetId) {
 
         await sheetsApi.spreadsheets.values.clear({
             spreadsheetId,
-            range: 'Sheet1!A2:E',
+            range: 'Feuille 1!A2:E',
         });
 
         return true;
@@ -112,7 +112,7 @@ async function setupSheetHeaders(spreadsheetId) {
 
         await sheetsApi.spreadsheets.values.update({
             spreadsheetId,
-            range: 'Sheet1!A1:E1',
+            range: 'Feuille 1!A1:E1',
             valueInputOption: 'RAW',
             resource: { values }
         });

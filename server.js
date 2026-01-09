@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -41,8 +43,15 @@ function authenticateUnity(req, res, next) {
 
 app.use(express.static('public'));
 
-// Data is now stored in Google Sheets (like Excel in the cloud)
-// No need for in-memory storage
+// Fallback: In-memory storage when Google Sheets is not configured
+let memoryData = [];
+const USE_SHEETS = SPREADSHEET_ID !== '';
+
+if (USE_SHEETS) {
+    console.log('📊 Google Sheets mode enabled - data will be saved permanently');
+} else {
+    console.log('⚠️  Memory mode - data will be lost on restart. Configure Google Sheets for permanent storage.');
+}
 
 // Login endpoint for dashboard
 app.post('/api/login', (req, res) => {
@@ -57,73 +66,87 @@ app.post('/api/login', (req, res) => {
 
 // Endpoint to receive data from Unity (requires API key)
 app.post('/api/data', authenticateUnity, async (req, res) => {
-    const { name, mostUsedColor, designTime } = req.body;
-    
-    if (!name || !mostUsedColor || designTime === undefined) {
-        return res.status(400).json({ 
-            error: 'Missing required fields: name, mostUsedColor, designTime' 
-        });
-    }
-
-    if (!SPREADSHEET_ID) {
-        return res.status(503).json({ 
-            error: 'Google Sheets not configured. Please set GOOGLE_SPREADSHEET_ID.' 
-        });
-    }
-
     try {
+        console.log('📥 Received data from Unity:', JSON.stringify(req.body));
+        
+        const { name, mostUsedColor, colorCode, designTime } = req.body;
+        
+        // Accept either mostUsedColor or colorCode
+        const color = mostUsedColor || colorCode || '#000000';
+        
+        if (!name || designTime === undefined) {
+            console.error('❌ Validation error - missing fields:', req.body);
+            return res.status(400).json({ 
+                error: 'Missing required fields: name, designTime' 
+            });
+        }
+
         const entry = {
+            id: Date.now(),
             name,
-            mostUsedColor,
+            mostUsedColor: color,
             designTime,
             timestamp: new Date().toISOString()
         };
 
-        // Save to Google Sheet (Excel)
-        const savedEntry = await appendSheetData(SPREADSHEET_ID, entry);
+        // Try Google Sheets first, fallback to memory
+        if (USE_SHEETS) {
+            try {
+                const savedEntry = await appendSheetData(SPREADSHEET_ID, entry);
+                console.log('✅ Data saved to Google Sheet:', savedEntry);
+                return res.json({ success: true, message: 'Data saved to Excel sheet', data: savedEntry });
+            } catch (error) {
+                console.error('❌ Google Sheets error, falling back to memory:', error.message);
+                // Fall through to memory storage
+            }
+        }
 
-        console.log('✅ New data saved to Google Sheet:', savedEntry);
-        res.json({ success: true, message: 'Data saved to Excel sheet successfully', data: savedEntry });
+        // Fallback: Save to memory
+        memoryData.push(entry);
+        if (memoryData.length > 100) {
+            memoryData = memoryData.slice(-100);
+        }
+        console.log('✅ Data saved to memory (temporary):', entry);
+        res.json({ success: true, message: 'Data saved (memory - will be lost on restart)', data: entry });
     } catch (error) {
-        console.error('Error saving to Google Sheet:', error);
-        res.status(500).json({ error: 'Failed to save data to Excel sheet' });
+        console.error('❌ Server error:', error);
+        res.status(500).json({ error: 'Internal server error: ' + error.message });
     }
 });
 
 // Endpoint to get all dashboard data (requires authentication)
 app.get('/api/data', authenticateDashboard, async (req, res) => {
-    if (!SPREADSHEET_ID) {
-        return res.status(503).json({ 
-            error: 'Google Sheets not configured. Please set GOOGLE_SPREADSHEET_ID.' 
-        });
+    // Try Google Sheets first, fallback to memory
+    if (USE_SHEETS) {
+        try {
+            const data = await getSheetData(SPREADSHEET_ID);
+            return res.json(data);
+        } catch (error) {
+            console.error('❌ Google Sheets error, falling back to memory:', error.message);
+            // Fall through to memory storage
+        }
     }
 
-    try {
-        // Read from Google Sheet (Excel)
-        const data = await getSheetData(SPREADSHEET_ID);
-        res.json(data);
-    } catch (error) {
-        console.error('Error reading from Google Sheet:', error);
-        res.status(500).json({ error: 'Failed to read data from Excel sheet' });
-    }
+    // Fallback: Return memory data
+    res.json(memoryData);
 });
 
 // Endpoint to clear all data (requires authentication)
 app.delete('/api/data', authenticateDashboard, async (req, res) => {
-    if (!SPREADSHEET_ID) {
-        return res.status(503).json({ 
-            error: 'Google Sheets not configured. Please set GOOGLE_SPREADSHEET_ID.' 
-        });
+    // Try Google Sheets first, fallback to memory
+    if (USE_SHEETS) {
+        try {
+            await clearSheetData(SPREADSHEET_ID);
+            return res.json({ success: true, message: 'All data cleared from Excel sheet' });
+        } catch (error) {
+            console.error('❌ Google Sheets error, falling back to memory:', error.message);
+            // Fall through to memory storage
+        }
     }
 
-    try {
-        // Clear Google Sheet (Excel)
-        await clearSheetData(SPREADSHEET_ID);
-        res.json({ success: true, message: 'All data cleared from Excel sheet' });
-    } catch (error) {
-        console.error('Error clearing Google Sheet:', error);
-        res.status(500).json({ error: 'Failed to clear Excel sheet' });
-    }
+    // Fallback: Clear memory data
+    memoryData = [];
+    res.json({ success: true, message: 'All data cleared from memory' });
 });
 
 // Serve the dashboard
