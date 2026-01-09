@@ -294,69 +294,68 @@ function formatDate(timestamp) {
 function getColorHex(colorName) {
     // Convert French color names to hex codes
     const colorMap = {
-        // Rouge / Red shades
+        // Basic colors from Unity (exact matches)
+        'Rouge': '#FF0000',
+        'Orange': '#FF8000',
+        'Jaune': '#FFFF00',
+        'Jaune-Vert': '#80FF00',
+        'Vert': '#00FF00',
+        'Vert-Cyan': '#00FF80',
+        'Cyan': '#00FFFF',
+        'Cyan-Bleu': '#0080FF',
+        'Bleu': '#0000FF',
+        'Violet': '#8000FF',
+        'Magenta': '#FF00FF',
+        'Rose': '#FF0080',
+        'Blanc': '#FFFFFF',
+        'Noir': '#000000',
+        'Gris': '#808080',
+        
+        // Lowercase versions
         'rouge': '#FF0000',
-        'red': '#FF0000',
-        'rouge foncé': '#8B0000',
-        'rouge clair': '#FF6B6B',
-        
-        // Bleu / Blue shades
-        'bleu': '#0000FF',
-        'blue': '#0000FF',
-        'bleu foncé': '#00008B',
-        'bleu clair': '#87CEEB',
-        'cyan': '#00FFFF',
-        'turquoise': '#40E0D0',
-        
-        // Vert / Green shades
-        'vert': '#00FF00',
-        'green': '#00FF00',
-        'vert foncé': '#006400',
-        'vert clair': '#90EE90',
-        
-        // Jaune / Yellow shades
+        'orange': '#FF8000',
         'jaune': '#FFFF00',
-        'yellow': '#FFFF00',
-        'or': '#FFD700',
-        'gold': '#FFD700',
-        
-        // Orange
-        'orange': '#FFA500',
-        'orange foncé': '#FF8C00',
-        
-        // Violet / Purple shades
-        'violet': '#EE82EE',
-        'purple': '#800080',
-        'mauve': '#E0B0FF',
+        'jaune-vert': '#80FF00',
+        'vert': '#00FF00',
+        'vert-cyan': '#00FF80',
+        'cyan': '#00FFFF',
+        'cyan-bleu': '#0080FF',
+        'bleu': '#0000FF',
+        'violet': '#8000FF',
         'magenta': '#FF00FF',
-        
-        // Rose / Pink
-        'rose': '#FFC0CB',
-        'pink': '#FFC0CB',
-        'rose foncé': '#C71585',
-        
-        // Marron / Brown
-        'marron': '#8B4513',
-        'brown': '#8B4513',
-        'brun': '#A52A2A',
-        
-        // Gris / Gray
+        'rose': '#FF0080',
+        'blanc': '#FFFFFF',
+        'noir': '#000000',
         'gris': '#808080',
+        
+        // English versions
+        'red': '#FF0000',
+        'yellow': '#FFFF00',
+        'green': '#00FF00',
+        'blue': '#0000FF',
+        'purple': '#8000FF',
+        'pink': '#FFC0CB',
+        'white': '#FFFFFF',
+        'black': '#000000',
         'gray': '#808080',
         'grey': '#808080',
+        
+        // Additional shades
+        'rouge foncé': '#8B0000',
+        'rouge clair': '#FF6B6B',
+        'bleu foncé': '#00008B',
+        'bleu clair': '#87CEEB',
+        'vert foncé': '#006400',
+        'vert clair': '#90EE90',
+        'orange foncé': '#FF8C00',
         'gris foncé': '#404040',
         'gris clair': '#D3D3D3',
-        
-        // Noir et Blanc / Black and White
-        'noir': '#000000',
-        'black': '#000000',
-        'blanc': '#FFFFFF',
-        'white': '#FFFFFF',
-        
-        // Autres / Others
-        'beige': '#F5F5DC',
-        'crème': '#FFFDD0',
-        'ivoire': '#FFFFF0'
+        'or': '#FFD700',
+        'gold': '#FFD700',
+        'marron': '#8B4513',
+        'brown': '#8B4513',
+        'turquoise': '#40E0D0',
+        'beige': '#F5F5DC'
     };
     
     // Check if it's already a hex code
@@ -364,7 +363,12 @@ function getColorHex(colorName) {
         return colorName;
     }
     
-    // Convert to lowercase and check mapping
+    // Try exact match first
+    if (colorMap[colorName]) {
+        return colorMap[colorName];
+    }
+    
+    // Try lowercase
     const normalizedName = colorName ? colorName.toLowerCase().trim() : '';
     return colorMap[normalizedName] || colorName || '#808080';
 }
