@@ -1,5 +1,6 @@
 node_modules/
 google-credentials.json
+firebase-service-account.json
 .env
 *.log
 .DS_Store
