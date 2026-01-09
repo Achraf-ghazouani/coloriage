@@ -215,7 +215,11 @@ function updateChart(data) {
     if (colorChart) {
         colorChart.data.labels = sortedColors.map(([color]) => color);
         colorChart.data.datasets[0].data = sortedColors.map(([, count]) => count);
-        colorChart.data.datasets[0].backgroundColor = sortedColors.map(([color]) => getColorHex(color));
+        // Use colorCode from data if available, otherwise fall back to getColorHex
+        colorChart.data.datasets[0].backgroundColor = sortedColors.map(([colorName]) => {
+            const dataItem = data.find(d => d.mostUsedColor === colorName);
+            return dataItem?.colorCode || getColorHex(colorName);
+        });
         colorChart.update();
     }
 }
@@ -235,12 +239,15 @@ function updateTable(data) {
     // Sort by timestamp, most recent first
     const sortedData = [...data].reverse();
     
-    tbody.innerHTML = sortedData.map(item => `
+    tbody.innerHTML = sortedData.map(item => {
+        // Use colorCode if available, otherwise fall back to getColorHex
+        const color = item.colorCode || getColorHex(item.mostUsedColor);
+        return `
         <tr class="new-row">
             <td>${formatDate(item.timestamp)}</td>
             <td><strong>${escapeHtml(item.name)}</strong></td>
             <td>
-                <span class="color-badge" style="background-color: ${getColorHex(item.mostUsedColor)}; border-color: ${getColorHex(item.mostUsedColor)};">
+                <span class="color-badge" style="background-color: ${color}; border-color: ${color};">
                     <span class="color-badge-text">${escapeHtml(item.mostUsedColor)}</span>
                 </span>
             </td>
@@ -248,7 +255,8 @@ function updateTable(data) {
                 <span class="time-badge">${formatTime(item.designTime)}</span>
             </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function clearData() {

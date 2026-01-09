@@ -29,7 +29,7 @@ async function initializeSheets() {
 }
 
 // Get data from Google Sheet
-async function getSheetData(spreadsheetId, range = 'Feuille 1!A2:E') {
+async function getSheetData(spreadsheetId, range = 'Feuille 1!A2:F') {
     try {
         const sheetsApi = await initializeSheets();
         if (!sheetsApi) return [];
@@ -46,8 +46,9 @@ async function getSheetData(spreadsheetId, range = 'Feuille 1!A2:E') {
             id: row[0] || `row_${index}`,
             name: row[1] || '',
             mostUsedColor: row[2] || '',
-            designTime: parseFloat(row[3]) || 0,
-            timestamp: row[4] || new Date().toISOString()
+            colorCode: row[3] || '#808080',
+            designTime: parseFloat(row[4]) || 0,
+            timestamp: row[5] || new Date().toISOString()
         }));
     } catch (error) {
         console.error('Error reading from Google Sheet:', error.message);
@@ -66,13 +67,14 @@ async function appendSheetData(spreadsheetId, data) {
             id,
             data.name,
             data.mostUsedColor,
+            data.colorCode || '#808080',
             data.designTime,
             data.timestamp || new Date().toISOString()
         ]];
 
         await sheetsApi.spreadsheets.values.append({
             spreadsheetId,
-            range: 'Feuille 1!A:E',
+            range: 'Feuille 1!A:F',
             valueInputOption: 'RAW',
             resource: { values }
         });
@@ -92,7 +94,7 @@ async function clearSheetData(spreadsheetId) {
 
         await sheetsApi.spreadsheets.values.clear({
             spreadsheetId,
-            range: 'Feuille 1!A2:E',
+            range: 'Feuille 1!A2:F',
         });
 
         return true;
@@ -108,11 +110,11 @@ async function setupSheetHeaders(spreadsheetId) {
         const sheetsApi = await initializeSheets();
         if (!sheetsApi) throw new Error('Sheets not initialized');
 
-        const values = [['ID', 'Name', 'Most Used Color', 'Design Time (seconds)', 'Timestamp']];
+        const values = [['ID', 'Name', 'Most Used Color', 'Color Code', 'Design Time (seconds)', 'Timestamp']];
 
         await sheetsApi.spreadsheets.values.update({
             spreadsheetId,
-            range: 'Feuille 1!A1:E1',
+            range: 'Feuille 1!A1:F1',
             valueInputOption: 'RAW',
             resource: { values }
         });

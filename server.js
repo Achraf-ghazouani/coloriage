@@ -71,9 +71,6 @@ app.post('/api/data', authenticateUnity, async (req, res) => {
         
         const { name, mostUsedColor, colorCode, designTime } = req.body;
         
-        // Accept either mostUsedColor or colorCode
-        const color = mostUsedColor || colorCode || '#000000';
-        
         if (!name || designTime === undefined) {
             console.error('❌ Validation error - missing fields:', req.body);
             return res.status(400).json({ 
@@ -84,7 +81,8 @@ app.post('/api/data', authenticateUnity, async (req, res) => {
         const entry = {
             id: Date.now(),
             name,
-            mostUsedColor: color,
+            mostUsedColor: mostUsedColor || 'Unknown',
+            colorCode: colorCode ? `#${colorCode}` : '#808080',
             designTime,
             timestamp: new Date().toISOString()
         };

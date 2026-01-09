@@ -36,11 +36,11 @@ export default async function handler(req, res) {
 
     // POST - Receive data from Unity
     if (req.method === 'POST') {
-        const { name, mostUsedColor, designTime } = req.body;
+        const { name, mostUsedColor, colorCode, designTime } = req.body;
         
-        if (!name || !mostUsedColor || designTime === undefined) {
+        if (!name || designTime === undefined) {
             return res.status(400).json({ 
-                error: 'Missing required fields: name, mostUsedColor, designTime' 
+                error: 'Missing required fields: name, designTime' 
             });
         }
 
@@ -54,11 +54,13 @@ export default async function handler(req, res) {
             const sheets = getSheets();
             const id = Date.now().toString();
             const timestamp = new Date().toISOString();
+            const hexColor = colorCode ? `#${colorCode}` : '#808080';
             
             const values = [[
                 id,
                 name,
-                mostUsedColor,
+                mostUsedColor || 'Unknown',
+                hexColor,
                 designTime,
                 timestamp
             ]];
@@ -71,7 +73,7 @@ export default async function handler(req, res) {
                 resource: { values }
             });
 
-            const entry = { id, name, mostUsedColor, designTime, timestamp };
+            const entry = { id, name, mostUsedColor, colorCode: hexColor, designTime, timestamp };
             console.log('New data saved to Google Sheet:', entry);
             
             return res.status(200).json({ 
