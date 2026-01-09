@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { getSheetData, appendSheetData, clearSheetData } = require('./sheets-config');
 
 const app = express();
 const PORT = 3000;
@@ -8,6 +9,9 @@ const PORT = 3000;
 // Authentication settings
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || 'admin123';
 const UNITY_API_KEY = process.env.UNITY_API_KEY || 'unity-secret-key-123';
+
+// Google Sheets configuration
+const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID || '';
 
 // Middleware
 app.use(cors());
@@ -37,8 +41,8 @@ function authenticateUnity(req, res, next) {
 
 app.use(express.static('public'));
 
-// Store the data (in production, you'd use a database)
-let dashboardData = [];
+// Data is now stored in Google Sheets (like Excel in the cloud)
+// No need for in-memory storage
 
 // Login endpoint for dashboard
 app.post('/api/login', (req, res) => {
@@ -52,7 +56,7 @@ app.post('/api/login', (req, res) => {
 });
 
 // Endpoint to receive data from Unity (requires API key)
-app.post('/api/data', authenticateUnity, (req, res) => {
+app.post('/api/data', authenticateUnity, async (req, res) => {
     const { name, mostUsedColor, designTime } = req.body;
     
     if (!name || !mostUsedColor || designTime === undefined) {
@@ -61,34 +65,65 @@ app.post('/api/data', authenticateUnity, (req, res) => {
         });
     }
 
-    const entry = {
-        id: Date.now(),
-        name,
-        mostUsedColor,
-        designTime,
-        timestamp: new Date().toISOString()
-    };
-
-    dashboardData.push(entry);
-    
-    // Keep only the last 100 entries
-    if (dashboardData.length > 100) {
-        dashboardData = dashboardData.slice(-100);
+    if (!SPREADSHEET_ID) {
+        return res.status(503).json({ 
+            error: 'Google Sheets not configured. Please set GOOGLE_SPREADSHEET_ID.' 
+        });
     }
 
-    console.log('New data received:', entry);
-    res.json({ success: true, message: 'Data received successfully', data: entry });
+    try {
+        const entry = {
+            name,
+            mostUsedColor,
+            designTime,
+            timestamp: new Date().toISOString()
+        };
+
+        // Save to Google Sheet (Excel)
+        const savedEntry = await appendSheetData(SPREADSHEET_ID, entry);
+
+        console.log('✅ New data saved to Google Sheet:', savedEntry);
+        res.json({ success: true, message: 'Data saved to Excel sheet successfully', data: savedEntry });
+    } catch (error) {
+        console.error('Error saving to Google Sheet:', error);
+        res.status(500).json({ error: 'Failed to save data to Excel sheet' });
+    }
 });
 
 // Endpoint to get all dashboard data (requires authentication)
-app.get('/api/data', authenticateDashboard, (req, res) => {
-    res.json(dashboardData);
+app.get('/api/data', authenticateDashboard, async (req, res) => {
+    if (!SPREADSHEET_ID) {
+        return res.status(503).json({ 
+            error: 'Google Sheets not configured. Please set GOOGLE_SPREADSHEET_ID.' 
+        });
+    }
+
+    try {
+        // Read from Google Sheet (Excel)
+        const data = await getSheetData(SPREADSHEET_ID);
+        res.json(data);
+    } catch (error) {
+        console.error('Error reading from Google Sheet:', error);
+        res.status(500).json({ error: 'Failed to read data from Excel sheet' });
+    }
 });
 
 // Endpoint to clear all data (requires authentication)
-app.delete('/api/data', authenticateDashboard, (req, res) => {
-    dashboardData = [];
-    res.json({ success: true, message: 'All data cleared' });
+app.delete('/api/data', authenticateDashboard, async (req, res) => {
+    if (!SPREADSHEET_ID) {
+        return res.status(503).json({ 
+            error: 'Google Sheets not configured. Please set GOOGLE_SPREADSHEET_ID.' 
+        });
+    }
+
+    try {
+        // Clear Google Sheet (Excel)
+        await clearSheetData(SPREADSHEET_ID);
+        res.json({ success: true, message: 'All data cleared from Excel sheet' });
+    } catch (error) {
+        console.error('Error clearing Google Sheet:', error);
+        res.status(500).json({ error: 'Failed to clear Excel sheet' });
+    }
 });
 
 // Serve the dashboard
