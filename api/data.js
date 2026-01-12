@@ -68,7 +68,7 @@ export default async function handler(req, res) {
             // Append to Google Sheet (Excel)
             await sheets.spreadsheets.values.append({
                 spreadsheetId: SPREADSHEET_ID,
-                range: 'Feuille 1!A:E',
+                range: 'Feuille 1!A:F',
                 valueInputOption: 'RAW',
                 resource: { values }
             });
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
             // Read from Google Sheet (Excel)
             const response = await sheets.spreadsheets.values.get({
                 spreadsheetId: SPREADSHEET_ID,
-                range: 'Feuille 1!A2:E',
+                range: 'Feuille 1!A2:F',
             });
 
             const rows = response.data.values || [];
@@ -109,8 +109,9 @@ export default async function handler(req, res) {
                 id: row[0] || `row_${index}`,
                 name: row[1] || '',
                 mostUsedColor: row[2] || '',
-                designTime: parseFloat(row[3]) || 0,
-                timestamp: row[4] || ''
+                colorCode: row[3] || '',
+                designTime: parseFloat(row[4]) || 0,
+                timestamp: row[5] || ''
             }));
 
             return res.status(200).json(data);
@@ -134,7 +135,7 @@ export default async function handler(req, res) {
             // Clear Google Sheet (Excel) - keep headers
             await sheets.spreadsheets.values.clear({
                 spreadsheetId: SPREADSHEET_ID,
-                range: 'Feuille 1!A2:E',
+                range: 'Feuille 1!A2:F',
             });
             
             return res.status(200).json({ 
