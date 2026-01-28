@@ -5,6 +5,25 @@ const API_URL = window.location.hostname === 'localhost'
 
 let autoRefreshInterval = null;
 let colorChart = null;
+let currentChartType = 'pie';
+let currentChartData = null;
+
+// Calculate contrast text color (black or white) based on background color
+function getContrastColor(hexColor) {
+    // Remove # if present
+    const hex = hexColor.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return black for light colors, white for dark colors
+    return luminance > 0.5 ? '#000000' : '#FFFFFF';
+}
 
 // Get authentication token
 function getAuthToken() {
@@ -55,6 +74,18 @@ function setupEventListeners() {
         } else {
             stopAutoRefresh();
         }
+    });
+    
+    // Chart type selector
+    document.querySelectorAll('.chart-type-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const type = e.target.dataset.type;
+            changeChartType(type);
+            
+            // Update active state
+            document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+        });
     });
 }
 
@@ -132,7 +163,7 @@ function initChart() {
     if (!ctx) return;
     
     colorChart = new Chart(ctx, {
-        type: 'pie',
+        type: currentChartType,
         data: {
             labels: [],
             datasets: [{
@@ -142,52 +173,85 @@ function initChart() {
                 borderWidth: 2
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        font: {
-                            size: 12,
-                            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif'
-                        },
-                        generateLabels: function(chart) {
-                            const data = chart.data;
-                            if (data.labels.length && data.datasets.length) {
-                                return data.labels.map((label, i) => {
-                                    const value = data.datasets[0].data[i];
-                                    return {
-                                        text: `${label} (${value} utilisations)`,
-                                        fillStyle: data.datasets[0].backgroundColor[i],
-                                        hidden: false,
-                                        index: i
-                                    };
-                                });
-                            }
-                            return [];
+        options: getChartOptions(currentChartType)
+    });
+}
+
+function getChartOptions(type) {
+    const baseOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 15,
+                    font: {
+                        size: 12,
+                        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif'
+                    },
+                    generateLabels: function(chart) {
+                        const data = chart.data;
+                        if (data.labels.length && data.datasets.length) {
+                            return data.labels.map((label, i) => {
+                                const value = data.datasets[0].data[i];
+                                return {
+                                    text: `${label} (${value} utilisations)`,
+                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                    hidden: false,
+                                    index: i
+                                };
+                            });
                         }
+                        return [];
                     }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.parsed.y || context.parsed || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return `${label}: ${value} (${percentage}%)`;
                     }
                 }
             }
         }
-    });
+    };
+    
+    // Add scales for bar chart
+    if (type === 'bar') {
+        baseOptions.scales = {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        };
+    }
+    
+    return baseOptions;
+}
+
+function changeChartType(type) {
+    currentChartType = type;
+    
+    if (colorChart) {
+        colorChart.destroy();
+    }
+    
+    initChart();
+    
+    if (currentChartData) {
+        updateChart(currentChartData);
+    }
 }
 
 function updateChart(data) {
+    currentChartData = data;
     const noChartData = document.getElementById('noChartData');
     const chartCanvas = document.getElementById('colorChart');
     
@@ -242,12 +306,13 @@ function updateTable(data) {
     tbody.innerHTML = sortedData.map(item => {
         // Use colorCode if available, otherwise fall back to getColorHex
         const color = item.colorCode || getColorHex(item.mostUsedColor);
+        const textColor = getContrastColor(color);
         return `
         <tr class="new-row">
             <td>${formatDate(item.timestamp)}</td>
             <td><strong>${escapeHtml(item.name)}</strong></td>
             <td>
-                <span class="color-badge" style="background-color: ${color}; border-color: ${color};">
+                <span class="color-badge" style="background-color: ${color}; border-color: ${color}; color: ${textColor};">
                     <span class="color-badge-text">${escapeHtml(item.mostUsedColor)}</span>
                 </span>
             </td>

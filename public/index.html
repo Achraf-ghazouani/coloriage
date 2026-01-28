@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tableau de Bord Coloriage</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎨</text></svg>">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -44,7 +45,15 @@
         </div>
 
         <div class="chart-container">
-            <h2>📊 Distribution des Couleurs Utilisées</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">📊 Distribution des Couleurs Utilisées</h2>
+                <div class="chart-type-selector">
+                    <button class="chart-type-btn active" data-type="pie">🥧 Camembert</button>
+                    <button class="chart-type-btn" data-type="bar">📊 Barres</button>
+                    <button class="chart-type-btn" data-type="doughnut">🍩 Anneau</button>
+                    <button class="chart-type-btn" data-type="polarArea">🎯 Polaire</button>
+                </div>
+            </div>
             <div class="chart-wrapper">
                 <canvas id="colorChart"></canvas>
             </div>
@@ -71,11 +80,6 @@
                 </tbody>
             </table>
         </div>
-
-        <footer style="text-align: center; margin-top: 40px; color: white; opacity: 0.8;">
-            <p>📡 Point d'API: <span id="apiEndpoint" style="font-family: monospace; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 5px;"></span></p>
-            <p style="font-size: 0.9em; margin-top: 10px;">Envoyer des requêtes POST avec: name, mostUsedColor, designTime</p>
-        </footer>
     </div>
 
     <script src="script.js"></script>
