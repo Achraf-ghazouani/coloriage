@@ -41,6 +41,116 @@ function authenticateUnity(req, res, next) {
     }
 }
 
+function hexToRgb(hexColor) {
+    if (!hexColor) return null;
+
+    const normalized = hexColor.replace('#', '').trim();
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+        return null;
+    }
+
+    return {
+        r: parseInt(normalized.slice(0, 2), 16),
+        g: parseInt(normalized.slice(2, 4), 16),
+        b: parseInt(normalized.slice(4, 6), 16)
+    };
+}
+
+function rgbToHsv(r, g, b) {
+    const rn = r / 255;
+    const gn = g / 255;
+    const bn = b / 255;
+
+    const max = Math.max(rn, gn, bn);
+    const min = Math.min(rn, gn, bn);
+    const delta = max - min;
+
+    let h = 0;
+    if (delta !== 0) {
+        if (max === rn) {
+            h = ((gn - bn) / delta) % 6;
+        } else if (max === gn) {
+            h = (bn - rn) / delta + 2;
+        } else {
+            h = (rn - gn) / delta + 4;
+        }
+    }
+
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
+
+    const s = max === 0 ? 0 : delta / max;
+    const v = max;
+
+    return { h, s, v };
+}
+
+function getApproximateColorName(hexColor) {
+    const rgb = hexToRgb(hexColor);
+    if (!rgb) {
+        return 'Gris';
+    }
+
+    const { h, s, v } = rgbToHsv(rgb.r, rgb.g, rgb.b);
+
+    if (s < 0.12) {
+        if (v <= 0.15) return 'Noir';
+        if (v >= 0.92) return 'Blanc';
+        return 'Gris';
+    }
+
+    if (h < 15 || h >= 345) return 'Rouge';
+    if (h < 40) return 'Orange';
+    if (h < 70) return 'Jaune';
+    if (h < 95) return 'Jaune-Vert';
+    if (h < 160) return 'Vert';
+    if (h < 195) return 'Cyan';
+    if (h < 255) return 'Bleu';
+    if (h < 290) return 'Violet';
+    if (h < 335) return 'Magenta';
+    return 'Rose';
+}
+
+function normalizeHexColor(colorCode, fallback = '#808080') {
+    const rawValue = typeof colorCode === 'string' ? colorCode.trim() : '';
+    const match = rawValue.match(/^#?([0-9a-fA-F]{6})$/);
+    return match ? `#${match[1].toUpperCase()}` : fallback;
+}
+
+function normalizeColorName(mostUsedColor, colorCode) {
+    const rawName = typeof mostUsedColor === 'string' ? mostUsedColor.trim() : '';
+
+    if (rawName) {
+        const isCouleurFallback = /^couleur\b/i.test(rawName);
+        const extractedHex = rawName.match(/([0-9a-fA-F]{6})/);
+        if (isCouleurFallback && extractedHex) {
+            return getApproximateColorName(extractedHex[1]);
+        }
+
+        if (/^#?[0-9a-fA-F]{6}$/.test(rawName)) {
+            return getApproximateColorName(rawName);
+        }
+
+        return rawName;
+    }
+
+    const normalizedHex = normalizeHexColor(colorCode, '');
+    if (normalizedHex) {
+        return getApproximateColorName(normalizedHex);
+    }
+
+    return 'Inconnue';
+}
+
+function normalizeEntryColors(entry) {
+    const normalizedColorCode = normalizeHexColor(entry.colorCode);
+    return {
+        ...entry,
+        colorCode: normalizedColorCode,
+        mostUsedColor: normalizeColorName(entry.mostUsedColor, normalizedColorCode)
+    };
+}
+
 app.use(express.static('public'));
 
 // Fallback: In-memory storage when Google Sheets is not configured
@@ -81,16 +191,18 @@ app.post('/api/data', authenticateUnity, async (req, res) => {
         const entry = {
             id: Date.now(),
             name,
-            mostUsedColor: mostUsedColor || 'Unknown',
-            colorCode: colorCode ? `#${colorCode}` : '#808080',
+            mostUsedColor,
+            colorCode,
             designTime,
             timestamp: new Date().toISOString()
         };
 
+        const normalizedEntry = normalizeEntryColors(entry);
+
         // Try Google Sheets first, fallback to memory
         if (USE_SHEETS) {
             try {
-                const savedEntry = await appendSheetData(SPREADSHEET_ID, entry);
+                const savedEntry = await appendSheetData(SPREADSHEET_ID, normalizedEntry);
                 console.log('✅ Data saved to Google Sheet:', savedEntry);
                 return res.json({ success: true, message: 'Data saved to Excel sheet', data: savedEntry });
             } catch (error) {
@@ -100,12 +212,12 @@ app.post('/api/data', authenticateUnity, async (req, res) => {
         }
 
         // Fallback: Save to memory
-        memoryData.push(entry);
+        memoryData.push(normalizedEntry);
         if (memoryData.length > 100) {
             memoryData = memoryData.slice(-100);
         }
-        console.log('✅ Data saved to memory (temporary):', entry);
-        res.json({ success: true, message: 'Data saved (memory - will be lost on restart)', data: entry });
+        console.log('✅ Data saved to memory (temporary):', normalizedEntry);
+        res.json({ success: true, message: 'Data saved (memory - will be lost on restart)', data: normalizedEntry });
     } catch (error) {
         console.error('❌ Server error:', error);
         res.status(500).json({ error: 'Internal server error: ' + error.message });
@@ -118,7 +230,7 @@ app.get('/api/data', authenticateDashboard, async (req, res) => {
     if (USE_SHEETS) {
         try {
             const data = await getSheetData(SPREADSHEET_ID);
-            return res.json(data);
+            return res.json(data.map(normalizeEntryColors));
         } catch (error) {
             console.error('❌ Google Sheets error, falling back to memory:', error.message);
             // Fall through to memory storage
@@ -126,7 +238,7 @@ app.get('/api/data', authenticateDashboard, async (req, res) => {
     }
 
     // Fallback: Return memory data
-    res.json(memoryData);
+    res.json(memoryData.map(normalizeEntryColors));
 });
 
 // Endpoint to clear all data (requires authentication)

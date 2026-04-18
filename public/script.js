@@ -140,8 +140,13 @@ function updateStats(data) {
     // Most popular color
     if (data.length > 0) {
         const colorCounts = {};
+        const colorHexByName = {};
         data.forEach(item => {
-            colorCounts[item.mostUsedColor] = (colorCounts[item.mostUsedColor] || 0) + 1;
+            const displayColorName = getDisplayColorName(item.mostUsedColor, item.colorCode);
+            colorCounts[displayColorName] = (colorCounts[displayColorName] || 0) + 1;
+            if (!colorHexByName[displayColorName]) {
+                colorHexByName[displayColorName] = item.colorCode || getColorHex(displayColorName);
+            }
         });
         
         const topColor = Object.keys(colorCounts).reduce((a, b) => 
@@ -150,7 +155,7 @@ function updateStats(data) {
         
         const colorEl = document.getElementById('topColor');
         colorEl.textContent = topColor;
-        colorEl.style.color = topColor;
+        colorEl.style.color = colorHexByName[topColor] || getColorHex(topColor);
         colorEl.style.textShadow = '1px 1px 2px rgba(0,0,0,0.1)';
     } else {
         document.getElementById('topColor').textContent = '-';
@@ -266,8 +271,13 @@ function updateChart(data) {
     
     // Count color usage
     const colorCounts = {};
+    const colorHexByName = {};
     data.forEach(item => {
-        colorCounts[item.mostUsedColor] = (colorCounts[item.mostUsedColor] || 0) + 1;
+        const displayColorName = getDisplayColorName(item.mostUsedColor, item.colorCode);
+        colorCounts[displayColorName] = (colorCounts[displayColorName] || 0) + 1;
+        if (!colorHexByName[displayColorName]) {
+            colorHexByName[displayColorName] = item.colorCode || getColorHex(displayColorName);
+        }
     });
     
     // Sort by count
@@ -279,10 +289,9 @@ function updateChart(data) {
     if (colorChart) {
         colorChart.data.labels = sortedColors.map(([color]) => color);
         colorChart.data.datasets[0].data = sortedColors.map(([, count]) => count);
-        // Use colorCode from data if available, otherwise fall back to getColorHex
+        // Prefer the original hex from data and fall back to mapped color hex.
         colorChart.data.datasets[0].backgroundColor = sortedColors.map(([colorName]) => {
-            const dataItem = data.find(d => d.mostUsedColor === colorName);
-            return dataItem?.colorCode || getColorHex(colorName);
+            return colorHexByName[colorName] || getColorHex(colorName);
         });
         colorChart.update();
     }
@@ -304,8 +313,9 @@ function updateTable(data) {
     const sortedData = [...data].reverse();
     
     tbody.innerHTML = sortedData.map(item => {
+        const displayColorName = getDisplayColorName(item.mostUsedColor, item.colorCode);
         // Use colorCode if available, otherwise fall back to getColorHex
-        const color = item.colorCode || getColorHex(item.mostUsedColor);
+        const color = item.colorCode || getColorHex(displayColorName);
         const textColor = getContrastColor(color);
         return `
         <tr class="new-row">
@@ -313,7 +323,7 @@ function updateTable(data) {
             <td><strong>${escapeHtml(item.name)}</strong></td>
             <td>
                 <span class="color-badge" style="background-color: ${color}; border-color: ${color}; color: ${textColor};">
-                    <span class="color-badge-text">${escapeHtml(item.mostUsedColor)}</span>
+                    <span class="color-badge-text">${escapeHtml(displayColorName)}</span>
                 </span>
             </td>
             <td>
@@ -362,6 +372,102 @@ function formatDate(timestamp) {
         minute: '2-digit',
         second: '2-digit'
     });
+}
+
+function hexToRgb(hexColor) {
+    if (!hexColor) return null;
+
+    const normalized = hexColor.replace('#', '').trim();
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+        return null;
+    }
+
+    return {
+        r: parseInt(normalized.slice(0, 2), 16),
+        g: parseInt(normalized.slice(2, 4), 16),
+        b: parseInt(normalized.slice(4, 6), 16)
+    };
+}
+
+function rgbToHsv(r, g, b) {
+    const rn = r / 255;
+    const gn = g / 255;
+    const bn = b / 255;
+
+    const max = Math.max(rn, gn, bn);
+    const min = Math.min(rn, gn, bn);
+    const delta = max - min;
+
+    let h = 0;
+    if (delta !== 0) {
+        if (max === rn) {
+            h = ((gn - bn) / delta) % 6;
+        } else if (max === gn) {
+            h = (bn - rn) / delta + 2;
+        } else {
+            h = (rn - gn) / delta + 4;
+        }
+    }
+
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
+
+    const s = max === 0 ? 0 : delta / max;
+    const v = max;
+
+    return { h, s, v };
+}
+
+function getApproximateColorName(hexColor) {
+    const rgb = hexToRgb(hexColor);
+    if (!rgb) {
+        return 'Gris';
+    }
+
+    const { h, s, v } = rgbToHsv(rgb.r, rgb.g, rgb.b);
+
+    // Very low saturation means grayscale.
+    if (s < 0.12) {
+        if (v <= 0.15) return 'Noir';
+        if (v >= 0.92) return 'Blanc';
+        return 'Gris';
+    }
+
+    if (h < 15 || h >= 345) return 'Rouge';
+    if (h < 40) return 'Orange';
+    if (h < 70) return 'Jaune';
+    if (h < 95) return 'Jaune-Vert';
+    if (h < 160) return 'Vert';
+    if (h < 195) return 'Cyan';
+    if (h < 255) return 'Bleu';
+    if (h < 290) return 'Violet';
+    if (h < 335) return 'Magenta';
+    return 'Rose';
+}
+
+function getDisplayColorName(colorName, colorCode) {
+    if (typeof colorName === 'string' && colorName.trim() !== '') {
+        const trimmedName = colorName.trim();
+
+        // Unity fallback format: Couleur-428CC9
+        const generatedNameMatch = trimmedName.match(/^couleur-([0-9a-f]{6})$/i);
+        if (generatedNameMatch) {
+            return getApproximateColorName(generatedNameMatch[1]);
+        }
+
+        // If a hex was stored in the name field, convert it to a readable name.
+        if (/^#?[0-9a-f]{6}$/i.test(trimmedName)) {
+            return getApproximateColorName(trimmedName);
+        }
+
+        return trimmedName;
+    }
+
+    if (colorCode) {
+        return getApproximateColorName(colorCode);
+    }
+
+    return 'Inconnue';
 }
 
 function getColorHex(colorName) {
@@ -431,9 +537,19 @@ function getColorHex(colorName) {
         'beige': '#F5F5DC'
     };
     
-    // Check if it's already a hex code
-    if (colorName && colorName.startsWith('#')) {
-        return colorName;
+    // Handle 6-digit hex with or without leading '#'.
+    const normalizedInput = colorName ? colorName.toString().trim() : '';
+    if (/^#[0-9a-fA-F]{6}$/.test(normalizedInput)) {
+        return normalizedInput;
+    }
+    if (/^[0-9a-fA-F]{6}$/.test(normalizedInput)) {
+        return `#${normalizedInput}`;
+    }
+
+    // Handle Unity fallback format: Couleur-428CC9
+    const generatedNameMatch = normalizedInput.match(/^couleur-([0-9a-f]{6})$/i);
+    if (generatedNameMatch) {
+        return `#${generatedNameMatch[1].toUpperCase()}`;
     }
     
     // Try exact match first
@@ -442,8 +558,8 @@ function getColorHex(colorName) {
     }
     
     // Try lowercase
-    const normalizedName = colorName ? colorName.toLowerCase().trim() : '';
-    return colorMap[normalizedName] || colorName || '#808080';
+    const normalizedName = normalizedInput.toLowerCase();
+    return colorMap[normalizedName] || '#808080';
 }
 
 function escapeHtml(text) {

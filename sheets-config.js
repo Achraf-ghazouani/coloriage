@@ -3,6 +3,107 @@ const { google } = require('googleapis');
 let sheets = null;
 let auth = null;
 
+function hexToRgb(hexColor) {
+    if (!hexColor) return null;
+
+    const normalized = hexColor.replace('#', '').trim();
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+        return null;
+    }
+
+    return {
+        r: parseInt(normalized.slice(0, 2), 16),
+        g: parseInt(normalized.slice(2, 4), 16),
+        b: parseInt(normalized.slice(4, 6), 16)
+    };
+}
+
+function rgbToHsv(r, g, b) {
+    const rn = r / 255;
+    const gn = g / 255;
+    const bn = b / 255;
+
+    const max = Math.max(rn, gn, bn);
+    const min = Math.min(rn, gn, bn);
+    const delta = max - min;
+
+    let h = 0;
+    if (delta !== 0) {
+        if (max === rn) {
+            h = ((gn - bn) / delta) % 6;
+        } else if (max === gn) {
+            h = (bn - rn) / delta + 2;
+        } else {
+            h = (rn - gn) / delta + 4;
+        }
+    }
+
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
+
+    const s = max === 0 ? 0 : delta / max;
+    const v = max;
+
+    return { h, s, v };
+}
+
+function getApproximateColorName(hexColor) {
+    const rgb = hexToRgb(hexColor);
+    if (!rgb) {
+        return 'Gris';
+    }
+
+    const { h, s, v } = rgbToHsv(rgb.r, rgb.g, rgb.b);
+
+    if (s < 0.12) {
+        if (v <= 0.15) return 'Noir';
+        if (v >= 0.92) return 'Blanc';
+        return 'Gris';
+    }
+
+    if (h < 15 || h >= 345) return 'Rouge';
+    if (h < 40) return 'Orange';
+    if (h < 70) return 'Jaune';
+    if (h < 95) return 'Jaune-Vert';
+    if (h < 160) return 'Vert';
+    if (h < 195) return 'Cyan';
+    if (h < 255) return 'Bleu';
+    if (h < 290) return 'Violet';
+    if (h < 335) return 'Magenta';
+    return 'Rose';
+}
+
+function normalizeHexColor(colorCode, fallback = '#808080') {
+    const rawValue = typeof colorCode === 'string' ? colorCode.trim() : '';
+    const match = rawValue.match(/^#?([0-9a-fA-F]{6})$/);
+    return match ? `#${match[1].toUpperCase()}` : fallback;
+}
+
+function normalizeColorName(mostUsedColor, colorCode) {
+    const rawName = typeof mostUsedColor === 'string' ? mostUsedColor.trim() : '';
+
+    if (rawName) {
+        const isCouleurFallback = /^couleur\b/i.test(rawName);
+        const extractedHex = rawName.match(/([0-9a-fA-F]{6})/);
+        if (isCouleurFallback && extractedHex) {
+            return getApproximateColorName(extractedHex[1]);
+        }
+
+        if (/^#?[0-9a-fA-F]{6}$/.test(rawName)) {
+            return getApproximateColorName(rawName);
+        }
+
+        return rawName;
+    }
+
+    const normalizedHex = normalizeHexColor(colorCode, '');
+    if (normalizedHex) {
+        return getApproximateColorName(normalizedHex);
+    }
+
+    return 'Inconnue';
+}
+
 // Initialize Google Sheets API
 async function initializeSheets() {
     if (sheets) return sheets;
@@ -45,8 +146,8 @@ async function getSheetData(spreadsheetId, range = 'Feuille 1!A2:F') {
         return rows.map((row, index) => ({
             id: row[0] || `row_${index}`,
             name: row[1] || '',
-            mostUsedColor: row[2] || '',
-            colorCode: row[3] || '#808080',
+            mostUsedColor: normalizeColorName(row[2] || '', row[3] || ''),
+            colorCode: normalizeHexColor(row[3] || '', '#808080'),
             designTime: parseFloat(row[4]) || 0,
             timestamp: row[5] || new Date().toISOString()
         }));
@@ -63,11 +164,13 @@ async function appendSheetData(spreadsheetId, data) {
         if (!sheetsApi) throw new Error('Sheets not initialized');
 
         const id = Date.now().toString();
+        const normalizedColorCode = normalizeHexColor(data.colorCode || '#808080');
+        const normalizedColorName = normalizeColorName(data.mostUsedColor, normalizedColorCode);
         const values = [[
             id,
             data.name,
-            data.mostUsedColor,
-            data.colorCode || '#808080',
+            normalizedColorName,
+            normalizedColorCode,
             data.designTime,
             data.timestamp || new Date().toISOString()
         ]];
@@ -79,7 +182,12 @@ async function appendSheetData(spreadsheetId, data) {
             resource: { values }
         });
 
-        return { id, ...data };
+        return {
+            id,
+            ...data,
+            mostUsedColor: normalizedColorName,
+            colorCode: normalizedColorCode
+        };
     } catch (error) {
         console.error('Error writing to Google Sheet:', error.message);
         throw error;
